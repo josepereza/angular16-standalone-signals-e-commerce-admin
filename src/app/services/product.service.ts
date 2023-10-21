@@ -14,6 +14,7 @@ export class ProductService {
   constructor() { }
 
   getAll(params?: Params) {
+    console.log('param de service', params)
     const url = `${environment.API_URL}/v1/products`;
     return this.http.get<Product[]>(url, {
       params

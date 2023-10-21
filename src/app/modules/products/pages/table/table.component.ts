@@ -6,7 +6,7 @@ import { TableDataSource } from '@utils/data-source';
 import { ProductService } from '@services/product.service';
 import { UIService } from '@services/ui.service';
 import { Product } from '@models/product.model';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { NgIf, NgFor, NgOptimizedImage, CurrencyPipe } from '@angular/common';
@@ -23,9 +23,10 @@ import { CategoryService } from '@services/category.service';
   standalone: true,
   imports: [ReactiveFormsModule, MatToolbarModule, MatButtonModule, MatIconModule, NgIf, MatProgressBarModule, MatCardModule, MatTableModule, NgFor, NgOptimizedImage, CurrencyPipe, MatSelectModule, RouterLinkWithHref]
 })
-export class TableComponent implements OnInit, OnChanges {
+export class TableComponent implements OnInit {
   displayedColumns: string[] = ['id', 'title', 'price', 'images', 'category', 'actions'];
-  dataSource = new TableDataSource<Product>();
+  dataSource!: MatTableDataSource<Product>;
+
   private productService = inject(ProductService);
   private categoriesService = inject(CategoryService);
   private uiService = inject(UIService);
@@ -39,40 +40,49 @@ export class TableComponent implements OnInit, OnChanges {
 
 
   constructor() {
-    this.categorySelected.valueChanges.subscribe((value) => {
-      const queryParams: Params = {};
-      if (value !== 'all') {
-        queryParams.categoryId = value;
-      }
-      this.router.navigate(['/admin/products'], { queryParams });
+   
+   
+    this.productService.getAll().subscribe((data) => {
+      //this.dataSource.init(data);
+      console.log('data de getProducts',data)
+      this.dataSource = new MatTableDataSource(data);
+
+      this.showProgress = false;
+    
     });
+   
   }
 
   ngOnInit(): void {
+    
+    this.categorySelected.valueChanges.subscribe((value) => {
+    const queryParams: Params = {};
+    if (value !== 'all') {
+      queryParams.categoryId = value;
+    }
+    console.log('mis parametros',value)
+    //this.router.navigate(['/admin/products'], { queryParams });
+    this.showProgress = true;
+    this.productService.getAll(queryParams).subscribe((data) => {
+      //this.dataSource.init(data);
+      console.log('data de getProducts',data)
+      //this.dataSource = new MatTableDataSource(data);
+      this.dataSource.data=data
+      this.showProgress = false;
+    
+    });
+  });
     this.getCategories();
+     
+   
   }
 
-  ngOnChanges() {
-    const params: Params = {};
-    if (this.categoryId) {
-      params.categoryId = this.categoryId;
-    }
-    console.log(params);
-    this.getProducts(params);
-  }
+ 
 
   toggleDrawer() {
     this.uiService.toggleDrawer();
   }
 
-  getProducts(params: Params) {
-    this.showProgress = true;
-    this.productService.getAll(params).subscribe((data) => {
-      this.dataSource.init(data);
-      this.counter = this.dataSource.getTotal();
-      this.showProgress = false;
-    });
-  }
 
   getCategories() {
     this.categoriesService.getAll().subscribe((data) => {
